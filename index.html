@@ -72,9 +72,69 @@
   .send{background:var(--brand);color:#fff;border:none;border-radius:10px;width:44px;height:44px;font-size:18px;cursor:pointer}.send:hover{background:#4f5199}
   .hint{font-size:11px;color:var(--sub);margin-top:6px}
   .note-box{font-size:11px;color:#9a6700;background:#fbf3df;border:1px solid #f0e2b8;border-radius:6px;padding:6px 9px;margin-top:8px}
+  /* 認証ゲート */
+  #loginOverlay{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#6264A7,#4f5199);display:grid;place-items:center}
+  #loginForm{background:#fff;border-radius:14px;padding:26px 28px;width:340px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+  #loginForm .lg-head{font-weight:700;font-size:15px;color:#242424;display:flex;align-items:center;gap:8px}
+  #loginForm .lg-dot{width:26px;height:26px;border-radius:7px;background:#6264A7;color:#fff;display:grid;place-items:center;font-weight:800}
+  #loginForm .lg-sub{font-size:12px;color:#616161;margin:6px 0 16px}
+  #loginForm label{display:block;font-size:12px;color:#616161;margin-bottom:10px}
+  #loginForm input{display:block;width:100%;margin-top:4px;padding:9px 11px;border:1px solid #d7e0e8;border-radius:8px;font-size:14px;font-family:inherit}
+  #loginForm input:focus{outline:2px solid #8B8CC7;border-color:#6264A7}
+  .lg-btn{width:100%;background:#6264A7;color:#fff;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px}
+  .lg-btn:hover{background:#4f5199}
+  .lg-err{color:#c50f1f;font-size:12px;min-height:16px;margin-bottom:6px}
+  .lg-note{font-size:10.5px;color:#9a6700;background:#fbf3df;border:1px solid #f0e2b8;border-radius:6px;padding:6px 8px;margin-top:12px;line-height:1.5}
 </style>
 </head>
 <body>
+<div id="loginOverlay">
+  <form id="loginForm" onsubmit="return doLogin(event)">
+    <div class="lg-head"><span class="lg-dot">監</span> 会議費・交際費 全数監査エージェント</div>
+    <div class="lg-sub">内部監査部 専用 ／ 認証が必要です</div>
+    <label>ユーザー名<input id="lgUser" autocomplete="username" autofocus></label>
+    <label>パスワード<input id="lgPass" type="password" autocomplete="current-password"></label>
+    <div id="lgErr" class="lg-err"></div>
+    <button type="submit" class="lg-btn">ログイン</button>
+    <div class="lg-note">非公開デモ。認証はブラウザ内でSHA-256照合します。静的ファイルのためサーバ級の強制力はありません（真の入室制限は認証付きホスティングが必要）。</div>
+  </form>
+</div>
+<script>
+/* ===== 認証ゲート（静的ファイル向け・SHA-256照合） ===== */
+var AUTH_USER='kansa';
+var AUTH_HASH='68cd1fb27c14956ef19f8643a67b50ff5429cdefd8ba02a9ffcad4b496d4a86a';
+function sha256(ascii){
+  function rr(v,a){return (v>>>a)|(v<<(32-a));}
+  var mp=Math.pow,mw=mp(2,32),i,j,result='',words=[],bitLen=ascii.length*8;
+  var hash=sha256.h=sha256.h||[],k=sha256.k=sha256.k||[],pc=k.length,comp={};
+  for(var c=2;pc<64;c++){if(!comp[c]){for(i=0;i<313;i+=c)comp[i]=c;hash[pc]=(mp(c,.5)*mw)|0;k[pc++]=(mp(c,1/3)*mw)|0;}}
+  ascii+='\x80';while(ascii.length%64-56)ascii+='\x00';
+  for(i=0;i<ascii.length;i++){j=ascii.charCodeAt(i);if(j>>8)return;words[i>>2]|=j<<((3-i)%4)*8;}
+  words[words.length]=((bitLen/mw)|0);words[words.length]=bitLen;
+  for(j=0;j<words.length;){
+    var w=words.slice(j,j+=16),oh=hash;hash=hash.slice(0,8);
+    for(i=0;i<64;i++){
+      var w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4];
+      var t1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]+
+        (w[i]=i<16?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);
+      var t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+      hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0;
+    }
+    for(i=0;i<8;i++)hash[i]=(hash[i]+oh[i])|0;
+  }
+  for(i=0;i<8;i++)for(j=3;j+1;j--){var b=(hash[i]>>(j*8))&255;result+=((b<16)?0:'')+b.toString(16);}
+  return result;
+}
+function doLogin(ev){
+  ev.preventDefault();
+  var u=document.getElementById('lgUser').value.trim(),p=document.getElementById('lgPass').value;
+  if(u===AUTH_USER&&sha256(p)===AUTH_HASH){sessionStorage.setItem('zensu_auth','1');document.getElementById('loginOverlay').style.display='none';}
+  else{document.getElementById('lgErr').textContent='ユーザー名またはパスワードが違います。';document.getElementById('lgPass').value='';}
+  return false;
+}
+function logout(){sessionStorage.removeItem('zensu_auth');location.reload();}
+if(sessionStorage.getItem('zensu_auth')==='1')document.getElementById('loginOverlay').style.display='none';
+</script>
 <div class="app">
   <header>
     <div class="logo"><span class="dot">C</span> Copilot Studio <span style="opacity:.7">｜ テスト キャンバス</span></div>
@@ -87,6 +147,7 @@
     <button class="btn primary" onclick="quick('テストサンプルを読み込む')">🧪 テストサンプルを読み込む</button>
     <button class="btn ghost" onclick="quick('全数監査を実行して')">▶ 全数監査を実行</button>
     <button class="btn ghost" onclick="resetChat()">↺ 会話をリセット</button>
+    <button class="btn ghost" onclick="logout()">🔒 ログアウト</button>
     <div class="datastat" id="datastat">データ未読込<br>「全数監査を実行」を押すと母集団を全件判定します。</div>
     <div class="note-box">サンプリングせず母集団を全件判定。判定は要件定義書§7の固定ルールで決定的に計算（外部送信なし）。</div>
   </aside>

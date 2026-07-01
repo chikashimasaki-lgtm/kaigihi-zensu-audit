@@ -2,6 +2,18 @@
 
 サンプリングを行わず、母集団を**全件（悉皆）**判定する全数監査のワークベンチ。単一HTML＋`data.js`・完全ローカル動作・外部送信なし。
 
+## ログイン（アプリ認証）
+起動時にログイン画面が出ます。**初期値**：
+
+| 項目 | 値 |
+|---|---|
+| ユーザー名 | `kansa` |
+| パスワード | `Kaigihi#2026` |
+
+- パスワードは平文で持たず **SHA-256ハッシュ**で照合（`index.html` の `AUTH_HASH`）。認証は sessionStorage 保持、ログアウトはサイドバー。
+- パスワード変更：`python3 -c "import hashlib;print(hashlib.sha256('新PW'.encode()).hexdigest())"` の出力で `AUTH_HASH` を置換。
+- 静的HTMLのため簡易ゲートであり、強制力は限定的（真の入室制限は認証付きホスティングが必要）。
+
 ## 見た目
 `kaigihi-kosaihi-agent-demo` と同じ **Copilot Studio 風チャットUI**（3ペイン）。サイドバーのトピック一覧は非表示。
 

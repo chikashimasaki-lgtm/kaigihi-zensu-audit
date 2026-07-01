@@ -2,6 +2,20 @@
 
 サンプリングを行わず、母集団を**全件（悉皆）**判定する全数監査のワークベンチ。単一HTML＋`data.js`・完全ローカル動作・外部送信なし。
 
+## ログイン（認証ゲート）
+起動時にログイン画面が出ます。**初期値**：
+
+| 項目 | 値 |
+|---|---|
+| ユーザー名 | `kansa` |
+| パスワード | `Kaigihi#2026` |
+
+- パスワードは平文で保存せず **SHA-256ハッシュ**で照合（`index.html` の `AUTH_HASH`）。
+- 認証はブラウザ内（sessionStorage）で保持。ログアウトはサイドバーの「🔒 ログアウト」。
+- **注意（重要）**：静的HTMLのためこれは簡易ゲートであり、開発者ツール等で回避可能＝**サーバ級の入室制限ではありません**。真に制限するには認証付きホスティング（例：Cloudflare Access、Basic認証、Netlify/Vercel の保護機能）に載せる必要があります。
+- パスワード変更：新パスワードの SHA-256 を計算し `AUTH_HASH` を置換
+  （例：`python3 -c "import hashlib;print(hashlib.sha256('新PW'.encode()).hexdigest())"`）。ユーザー名は `AUTH_USER`。
+
 ## 見た目
 `kaigihi-kosaihi-agent-demo` と同じ **Copilot Studio 風チャットUI**（3ペイン）。サイドバーのトピック一覧は非表示。
 
